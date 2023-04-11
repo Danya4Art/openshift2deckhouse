@@ -1,7 +1,7 @@
 import yaml
 import re
 
-pattern = r'\$\{(?P<var>\w+)\}'
+pattern = r'(?P<var>\$\{\w+\})'
 
 
 class Converter:
