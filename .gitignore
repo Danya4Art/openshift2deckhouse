@@ -127,3 +127,9 @@ dmypy.json
 
 # Pyre type checker
 .pyre/
+
+# Custom
+example
+oc2dh*
+*.pem
+*.txt
