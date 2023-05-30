@@ -1,24 +1,22 @@
 from oc_client import OpenshiftClient
+from d8_client import DeckhouseClient
 import os
 import datetime
-import yaml
 
 exceptions = ['kube', 'openshift']
-kinds = ['Template']
+kinds = ['Template', 'BuilderConfig', 'Builder']
 
 if __name__ == '__main__':
-    client = OpenshiftClient()
-    namespaces = [ns.metadata.name for ns in client.get_obj('Namespace').get().items]
+    oc = OpenshiftClient()
+    d8 = DeckhouseClient()
+    namespaces = [ns.metadata.name for ns in oc.get_obj('Namespace').get().items]
     for exception in exceptions:
         namespaces = list(filter(lambda ns: not(ns.startswith(exception)), namespaces))
     timestamp = f'oc2dh_{datetime.datetime.now()}'
     os.mkdir(timestamp)
     for namespace in namespaces:
-        # os.mkdir(f'{timestamp}/{namespace}')
+        os.mkdir(f'{timestamp}/{namespace}')
+        d8.create_namespace(namespace)
         for kind in kinds:
-            client.read_and_write(kind, ns=namespace, target_path=f'{timestamp}/{namespace}/{kind}')
-        #     os.mkdir(f'{timestamp}/{namespace}/{kind}')
-        #     obj = client.get_obj(kind, ns=namespace)
-        #     with open(f'{timestamp}/{namespace}/{kind}/{obj}', 'w') as file:
-        #         file.write(obj)
-
+            oc.read_and_write(kind, ns=namespace, target_path=f'{timestamp}/{namespace}/{kind}')
+            d8.apply_helm_chart(path=f'{timestamp}/{namespace}/{kind}', ns=namespace)

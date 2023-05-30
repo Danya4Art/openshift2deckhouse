@@ -42,3 +42,5 @@ class OpenshiftClient:
         for man in mans:
             with open(f'{target_path}/{man["metadata"]["name"]}') as file:
                 file.write(yaml.safe_dump(man))
+
+

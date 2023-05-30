@@ -1,40 +1,45 @@
 import yaml
 import re
+import os
 
 pattern = r'\$\{(?P<var>\w+)\}'
 
 
 class Converter:
-
-    # def __init__(self, config_path=None):
-    #     urllib3.disable_warnings()
-    #     if config_path is None:
-    #         config_path = '~/.kube/config'
-    #     self.client = openshift.dynamic.DynamicClient(kubernetes.config.new_client_from_config(config_path))
-
     def convert(self, source, target):
         man = None
         with open(source, 'r') as input:
             man = yaml.safe_load(input)
-        converted = self._convert(man)
-        with open(f'{target}/values', 'w') as output:
-            output
+        with self.open(f'{target}/values.yaml', 'w') as output:
+            params = {}
+            for param in man['parameters']:
+                params[param['name'].lower()] = param['value']
+            yaml.safe_dump(params, output, default_style=None, default_flow_style=False)
+        converted = self._convert(man.copy())
+        for obj in converted['objects']:
+            t = obj['kind']
+            with self.open(f'{target}/{t}.yaml', 'w+') as output:
+                yaml.safe_dump(obj, output, default_flow_style=False, indent=2)
 
-
-    def _convert(self, manifest: dict):
-        changes = set()
-        manifest = dict()
-        for v in manifest.values():
-            if isinstance(v, dict):
-                res = self._convert(v)
-                changes = changes.union(res['changes'])
-                manifest = res['manifest']
-            elif match := re.findall(pattern, v):
-                v = re.sub(pattern, self.change_var_template, v)
-
-
-        return {'changes': changes, 'manifest': manifest}
+    def _convert(self, manifest: [list | dict]):
+        for k, v in enumerate(manifest) if isinstance(manifest, list) else manifest.items():
+            if isinstance(v, dict) or isinstance(v, list):
+                manifest[k] = self._convert(v)
+            else:
+                # print(v, type(v))
+                if isinstance(v, str) and re.search(pattern, v):
+                    manifest[k] = re.sub(pattern, self.change_var_template, v)
+        return manifest
 
     @staticmethod
     def change_var_template(match_obj):
-        return '{{ .Values.' + match_obj.group()[2:-1].lower() + ' }}'
+        template = '{{{{ .Values.{0} }}}}'
+        return template.format(match_obj.group()[2:-1].lower())
+
+    @staticmethod
+    def open(path, *args, **kwargs):
+        pardir = os.path.dirname(path)
+        if not os.path.exists(pardir):
+            os.mkdir(pardir)
+        return open(path, *args, **kwargs)
+
