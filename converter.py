@@ -15,21 +15,17 @@ class Converter:
             for param in man['parameters']:
                 params[param['name'].lower()] = param['value']
             yaml.safe_dump(params, output, default_style=None, default_flow_style=False)
-        converted = self._convert(man.copy())
-        for obj in converted['objects']:
+        for obj in man['objects']:
             t = obj['kind']
-            with self.open(f'{target}/{t}.yaml', 'w+') as output:
-                yaml.safe_dump(obj, output, default_flow_style=False, indent=2)
+            n = obj['metadata']['name']
+            converted = self._convert(obj)
+            with self.open(f'{target}/{t}_{n}.yaml', 'w+') as output:
+                output.write(converted)
 
     def _convert(self, manifest: [list | dict]):
-        for k, v in enumerate(manifest) if isinstance(manifest, list) else manifest.items():
-            if isinstance(v, dict) or isinstance(v, list):
-                manifest[k] = self._convert(v)
-            else:
-                # print(v, type(v))
-                if isinstance(v, str) and re.search(pattern, v):
-                    manifest[k] = re.sub(pattern, self.change_var_template, v)
-        return manifest
+        manifest['apiVersion'] = 'v1'
+        converted = re.sub(pattern, self.change_var_template, yaml.safe_dump(manifest))
+        return converted
 
     @staticmethod
     def change_var_template(match_obj):
@@ -42,4 +38,12 @@ class Converter:
         if not os.path.exists(pardir):
             os.mkdir(pardir)
         return open(path, *args, **kwargs)
+
+
+if __name__ == '__main__':
+    c = Converter()
+    c.convert(
+        '/home/daniil/PycharmProjects/ModuleOKD/openshift2deckhouse/example/nginx-template.yaml',
+        '/home/daniil/PycharmProjects/ModuleOKD/examples'
+    )
 
