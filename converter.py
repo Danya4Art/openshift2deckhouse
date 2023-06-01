@@ -15,6 +15,7 @@ class Converter:
             for param in man['parameters']:
                 params[param['name'].lower()] = param['value']
             yaml.safe_dump(params, output, default_style=None, default_flow_style=False)
+            print(f'File values created {target}/values.yaml')
         with self.open(f'{target}/Chart.yaml', 'w') as output:
             chart = {
                 'name': man['metadata']['name'],
@@ -26,12 +27,14 @@ class Converter:
                 if k in annotations:
                     chart[k] = annotations[k]
             yaml.safe_dump(chart, output, default_style=None, default_flow_style=False)
+            print(f'File values created {target}/Chart.yaml')
         for obj in man['objects']:
             t = obj['kind']
             n = obj['metadata']['name']
             converted = self._convert(obj)
             with self.open(f'{target}/templates/{t}.yaml', 'w+') as output:
                 output.write(converted)
+                print(f'Converted manifest to helm chart {target}/templates/{t}.yaml')
 
     def _convert(self, manifest: [list | dict]):
         manifest['apiVersion'] = 'v1'
@@ -59,4 +62,3 @@ if __name__ == '__main__':
         '/home/daniil/PycharmProjects/ModuleOKD/openshift2deckhouse/example/nginx-template.yaml',
         '/home/daniil/PycharmProjects/ModuleOKD/examples'
     )
-
