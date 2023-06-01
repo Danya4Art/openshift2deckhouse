@@ -1,5 +1,4 @@
 from kubernetes import client, config
-from pyhelm.chartbuilder import ChartBuilder
 import urllib3
 import os
 
@@ -16,6 +15,5 @@ class OpenshiftClient:
         if name not in namespaces:
             self.client.create_namespace(name)
 
-    def apply_helm_chart(self, path, ns):
-        for template in os.listdir(os.path.join(path, 'templates')):
-            chart = ChartBuilder(template, )
+    def install_helm_chart(self, path, ns):
+        exec(f"helm install {path}/ --values {path}/values.yaml --namespace {ns}")
