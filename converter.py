@@ -15,15 +15,28 @@ class Converter:
             for param in man['parameters']:
                 params[param['name'].lower()] = param['value']
             yaml.safe_dump(params, output, default_style=None, default_flow_style=False)
+        with self.open(f'{target}/Chart.yaml', 'w') as output:
+            chart = {
+                'name': man['metadata']['name'],
+                'version': '0.1.0'
+            }
+            annotations_keys = ['description', 'tags']
+            annotations = man['metadata']['annotations']
+            for k in annotations_keys:
+                if k in annotations:
+                    chart[k] = annotations[k]
+            yaml.safe_dump(chart, output, default_style=None, default_flow_style=False)
         for obj in man['objects']:
             t = obj['kind']
             n = obj['metadata']['name']
             converted = self._convert(obj)
-            with self.open(f'{target}/{t}_{n}.yaml', 'w+') as output:
+            with self.open(f'{target}/templates/{t}.yaml', 'w+') as output:
                 output.write(converted)
 
     def _convert(self, manifest: [list | dict]):
         manifest['apiVersion'] = 'v1'
+        if manifest['kind'] == 'DeploymentConfig':
+            manifest['kind'] = 'Deployment'
         converted = re.sub(pattern, self.change_var_template, yaml.safe_dump(manifest))
         return converted
 
